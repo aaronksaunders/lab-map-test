@@ -1,0 +1,8 @@
+<Alloy>
+    <Window class="container" layout="vertical">
+        <View  module="ti.map"  id="MapView_1"  height="90%" />
+        <View height="10%" width="100%">
+        <Button id="refreshBtn" onClick="redoQuery" title="Redo Query"/>
+        </View>
+    </Window>
+</Alloy>
