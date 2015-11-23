@@ -123,11 +123,15 @@ function reverseGeocoder(_lat, _lng) {
  * @params : type : name of place type(ex: hospital, restaurant), latitude, longitude
  * //sort by distance : rankby=distance 
  */
-function getPlace(type, latitude, longitude) {
+function getPlace(type, latitude, longitude, _distance) {
 
 	var deferred = Q.defer();
+	
+	// default to 5 mile radius
+	var distInRadians = (_distance ? (_distance / 3959) : 0.00126);
+	
 	//can't display more than 20 items: http://stackoverflow.com/questions/6965847/obtaining-more-than-20-results-with-google-places-api 
-	var url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?max-results=50&radius=24150&&location=" + latitude + "," + longitude + "&types=" + type + "&key=" + Ti.App.Properties.getString("Google_APIKey");
+	var url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?max-results=50&radius="+ distInRadians +"&location=" + latitude + "," + longitude + "&types=" + type + "&key=" + Ti.App.Properties.getString("Google_APIKey");
 	
 	var client = Ti.Network.createHTTPClient({
 		// function called when the response data is available
