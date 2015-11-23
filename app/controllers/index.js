@@ -171,7 +171,7 @@ function redoQuery(_event) {
 	lat = _currentRegion.latitude;
 	lng = _currentRegion.longitude;
 	
-    geoService.getPlace("", lat, lng, (distance.m * 2)).then(function(_places){
+    geoService.getPlace("food", lat, lng, (distance.km * 1000)/2).then(function(_places){
     	
 		return renderOnMap($.MapView_1, _places.results.results);
     }).then(function(){
