@@ -1,20 +1,29 @@
 Alloy.Globals.Map = require('ti.map');
 
+// API KEY used for testing the application, the geoService API
+// is expecting to find the key there.
 var API_KEY = "AIzaSyAKqHtjBz0fc0CGg0D2r1yA7nc6el2PEA8";
 Ti.App.Properties.setString("Google_APIKey", API_KEY);
 
-
+// geoService from original moonlighting project
 var geoService = require('geoService');
-var mapUtilsService = require('mapUtils');
+
 // will use this for promises
 var Q = require('q');
 
+// the current distance showing on the mapView, this is used
+// when rendering the circle on the map and calculating where
+// to query for objects
 var currentDistanceValue = 0;
 
-function doClick(e) {
-    alert($.label.text);
-}
-
+/**
+ * renders the map with the associated annotations.
+ *
+ * @param _mapView {Ti.UI.MapView}
+ * @param _objects {Array} - the results from the google places API query
+ *
+ * @returns {Promise}
+ */
 function renderOnMap(_mapView, _objects) {
 
     var deferred = Q.defer();
@@ -30,30 +39,28 @@ function renderOnMap(_mapView, _objects) {
     // clear the map
     _mapView.removeAllAnnotations();
 
-    if (true) {
-        // loop through and create annotations
-        for (var i in _objects) {
+    // loop through and create annotations
+    for (var i in _objects) {
 
-            var mapData = _objects[i];
-            var coords = mapData.geometry.location;
+        var mapData = _objects[i];
+        var coords = mapData.geometry.location;
 
-            var annotation = Alloy.Globals.Map.createAnnotation({
-                latitude : Number(coords.lat),
-                longitude : Number(coords.lng),
-                subtitle : mapData.vicinity,
-                title : mapData.name,
-                //animate : true,
-                data : mapData
-            });
-            if (OS_IOS) {
-                annotation.setPincolor(Alloy.Globals.Map.ANNOTATION_RED);
-                annotation.setRightButton(Titanium.UI.iPhone.SystemButton.DISCLOSURE);
-            } else {
-                annotation.setRightButton(annotationRightButton);
-            }
-            annotationArray.push(annotation);
-        };
-    }
+        var annotation = Alloy.Globals.Map.createAnnotation({
+            latitude : Number(coords.lat),
+            longitude : Number(coords.lng),
+            subtitle : mapData.vicinity,
+            title : mapData.name,
+            //animate : true,
+            data : mapData
+        });
+        if (OS_IOS) {
+            annotation.setPincolor(Alloy.Globals.Map.ANNOTATION_RED);
+            annotation.setRightButton(Titanium.UI.iPhone.SystemButton.DISCLOSURE);
+        } else {
+            annotation.setRightButton(annotationRightButton);
+        }
+        annotationArray.push(annotation);
+    };
 
     _mapView.setAnnotations(annotationArray);
 
@@ -65,7 +72,15 @@ function renderOnMap(_mapView, _objects) {
 }
 
 /**
- * Get the screen boundaries as latitude and longitude values
+ * Get the screen boundaries as latitude and longitude values. This is a utility
+ * function that should be moved to the geoServices library
+ *
+ * @param region {Object}
+ *
+ * @returns {Object} returns the coords for the northWest,northEast,southWest, southEast
+ *                  locations in the current mapView
+ *
+ * @TODO - Move to geoServices library
  */
 function getMapBounds(region) {
     var b = {};
@@ -90,7 +105,11 @@ function getMapBounds(region) {
 }
 
 /**
+ * calculate the distance between two coordinates. The object has two values, lat,lng
+ * @param startCoord {Object}
+ * @param endCoord {Object}
  *
+ * @returns {Object} - contains distance in km and miles
  */
 function getDistance(startCoord, endCoord) {
     var R = 6371;
@@ -111,9 +130,12 @@ function getDistance(startCoord, endCoord) {
 }
 
 /**
+ * draws the circle on the map after the region has changed and the new annotations are plotted
+ *
+ * uses global variable `currentDistance`
  *
  */
-function updateHandler(evt) {
+function updateHandlerToDrawCircle(evt) {
     var mapView = $.MapView_1;
 
     currentDistanceValue && console.debug("currentDistanceValue.km/2 ", (currentDistanceValue.km / 2) * 1000);
@@ -150,7 +172,8 @@ function redoQuery(_event) {
         bounds,
         _currentRegion;
 
-    // if i have an event then reset the region...
+    // if i have an event then reset the region... was doing this on IOS but
+    // caused issues on Android so it is commented out until I do further testing
     if (_event.type === "regionchanged") {
         //$.MapView_1.setRegion(_event);
     }
@@ -159,9 +182,6 @@ function redoQuery(_event) {
 
     bounds = getMapBounds(_currentRegion);
 
-    // console.debug("_currentRegion ", _currentRegion);
-    // console.debug("Bounds ", bounds);
-
     // get the currentDistanceValue of the viewable region
     currentDistanceValue = getDistance(bounds.northWest, bounds.northEast);
     console.log("currentDistanceValue ", currentDistanceValue);
@@ -169,36 +189,48 @@ function redoQuery(_event) {
     lat = _currentRegion.latitude;
     lng = _currentRegion.longitude;
 
+    // find places...
     geoService.getPlace("food", lat, lng, (currentDistanceValue.km * 1000) / 2).then(function(_places) {
         console.log("query data " + _places.results.results.length);
         return renderOnMap($.MapView_1, _places.results.results);
     }).then(function() {
 
         // redraw the clice on the screen
-        return Q.defer().thenResolve(updateHandler());
+        return Q.defer().thenResolve(updateHandlerToDrawCircle());
 
     }, function(_error) {
         console.error(_error);
-        
+
         alert("Error: " + _error.error);
     });
 }
 
+/**
+ * called when the map region is changed, this will trigger a new
+ * query
+ *
+ * @param {Object} _event
+ */
 function handleRegionChanged(_event) {
     if (_event) {
         eventString = _event.latitude + " " + _event.longitude;
     }
-    console.log("handleRegionChanged ", eventString);
+    console.debug("handleRegionChanged ", eventString);
 
     return redoQuery(_event);
 }
 
-$.MapView_1.addEventListener('complete', updateHandler);
+// SET THE EVENT LISTENERS
+// ----------------------------------------------------------------------------
 
+// need when on IOS to redraw the circle when map is done rendering
+$.MapView_1.addEventListener('complete', updateHandlerToDrawCircle);
+
+// fired when the map region has changed
 $.MapView_1.addEventListener('regionchanged', handleRegionChanged);
 
-// get the users current location and set the map
-// region appropriately
+// get the users current location and set the map region appropriately
+// to get the application started up!
 geoService.getCurrentLocation().then(function(_location) {
 
     console.log("getCurrentLocation - success:", _location);
@@ -213,6 +245,5 @@ geoService.getCurrentLocation().then(function(_location) {
 }, function(_error) {
     console.log("getCurrentLocation", _error);
 });
-
 
 $.index.open();
