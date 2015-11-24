@@ -16,31 +16,32 @@ var Q = require('q');
  */
 function getCurrentLocation() {
 
-	var deferred = Q.defer();
+    var deferred = Q.defer();
 
-	if (!Ti.Geolocation.getLocationServicesEnabled()) {
-		alert('Location Services are not enabled');
-		deferred.reject({
-			location : null,
-			message : 'Location Services are not enabled'
-		});
+    if (!Ti.Geolocation.getLocationServicesEnabled()) {
+        alert('Location Services are not enabled');
+        deferred.reject({
+            location : null,
+            message : 'Location Services are not enabled'
+        });
 
-	} else {
+    } else {
 
-		Ti.Geolocation.accuracy = Ti.Geolocation.ACCURACY_HIGH; //ACCURACY_HIGH;
-		Ti.Geolocation.distanceFilter = 10;
-		//Ti.Geolocation.trackSignificantLocationChange = true;
-		Ti.Geolocation.addEventListener('location', function listener(_location) {
-			
-			// remove event handler since event was received
-			Ti.Geolocation.removeEventListener('location', listener);
-			
-			locationCallbackHandler(_location, deferred);
-			
-		});
-	}
+        Ti.Geolocation.accuracy = Ti.Geolocation.ACCURACY_HIGH;
+        //ACCURACY_HIGH;
+        Ti.Geolocation.distanceFilter = 10;
+        //Ti.Geolocation.trackSignificantLocationChange = true;
+        Ti.Geolocation.addEventListener('location', function listener(_location) {
 
-	return deferred.promise;
+            // remove event handler since event was received
+            Ti.Geolocation.removeEventListener('location', listener);
+
+            locationCallbackHandler(_location, deferred);
+
+        });
+    }
+
+    return deferred.promise;
 };
 
 /**
@@ -49,23 +50,23 @@ function getCurrentLocation() {
  */
 function locationCallbackHandler(_location, _deferred) {
 
-	// process the results
-	if (!_location.error && _location && _location.coords) {
+    // process the results
+    if (!_location.error && _location && _location.coords) {
 
-		_deferred.resolve({
-			location : _location.coords,
-			message : null
-		});
+        _deferred.resolve({
+            location : _location.coords,
+            message : null
+        });
 
-	} else {
-		alert('Location Services Error: ' + _location.error);
+    } else {
+        alert('Location Services Error: ' + _location.error);
 
-		_deferred.reject({
-			location : null,
-			message : _location.error
-		});
+        _deferred.reject({
+            location : null,
+            message : _location.error
+        });
 
-	}
+    }
 }
 
 /**
@@ -80,40 +81,40 @@ function locationCallbackHandler(_location, _deferred) {
  * @returns {Promise}
  */
 function reverseGeocoder(_lat, _lng) {
-	var title;
-	var deferred = Q.defer();
+    var title;
+    var deferred = Q.defer();
 
-	// callback method converting lat lng into a location/address
-	Ti.Geolocation.reverseGeocoder(_lat, _lng, function(_data) {
-		if (_data.success) {
-			Ti.API.debug("reverseGeo " + JSON.stringify(_data, null, 2));
-			var place = _data.places[0];
-			if (place.city === "") {
-				title = place.address;
-			} else {
-				title = place.street + " " + place.city;
-			}
-			deferred.resolve({
-				title : title,
-				place : place,
-				location : {
-					latitude : _lat,
-					longitude : _lng,
-				}
-			});
-		} else {
-			title = "No Address Found: " + _lat + ", " + _lng;
-			deferred.reject({
-				title : title,
-				location : {
-					latitude : _lat,
-					longitude : _lng,
-				}
-			});
-		}
+    // callback method converting lat lng into a location/address
+    Ti.Geolocation.reverseGeocoder(_lat, _lng, function(_data) {
+        if (_data.success) {
+            Ti.API.debug("reverseGeo " + JSON.stringify(_data, null, 2));
+            var place = _data.places[0];
+            if (place.city === "") {
+                title = place.address;
+            } else {
+                title = place.street + " " + place.city;
+            }
+            deferred.resolve({
+                title : title,
+                place : place,
+                location : {
+                    latitude : _lat,
+                    longitude : _lng,
+                }
+            });
+        } else {
+            title = "No Address Found: " + _lat + ", " + _lng;
+            deferred.reject({
+                title : title,
+                location : {
+                    latitude : _lat,
+                    longitude : _lng,
+                }
+            });
+        }
 
-	});
-	return deferred.promise;
+    });
+    return deferred.promise;
 }
 
 /*
@@ -121,40 +122,56 @@ function reverseGeocoder(_lat, _lng) {
  * 20 items
  *  ex: https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=38.899227,-77.027969&radius=48300&types=hospital&key=AIzaSyA1dZV49G9hkeacYcnw92afPqA6RRqaSeM
  * @params : type : name of place type(ex: hospital, restaurant), latitude, longitude
- * //sort by distance : rankby=distance 
+ * //sort by distance : rankby=distance
  */
 function getPlace(type, latitude, longitude, _distance) {
 
-	var deferred = Q.defer();
-	
-	//can't display more than 20 items: http://stackoverflow.com/questions/6965847/obtaining-more-than-20-results-with-google-places-api 
-	var url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?max-results=50&radius="+ _distance +"&location=" + latitude + "," + longitude + "&types=" + type + "&key=" + Ti.App.Properties.getString("Google_APIKey");
-	
-	var client = Ti.Network.createHTTPClient({
-		// function called when the response data is available
-		onload : function(e) {
+    var deferred = Q.defer();
 
-			var json = JSON.parse(this.responseText);
+    //can't display more than 20 items: http://stackoverflow.com/questions/6965847/obtaining-more-than-20-results-with-google-places-api
+    var url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?max-results=50&radius=" + _distance + "&location=" + latitude + "," + longitude + "&types=" + type + "&key=" + Ti.App.Properties.getString("Google_APIKey");
 
-			deferred.resolve({
-				success : e,
-				results : json
-			});
+    console.debug("getPlace ", url);
 
-		},
-		// function called when an error occurs, including a timeout
-		onerror : function(err) {
-			deferred.reject({
-				error : err,
-				results : err.error
-			});
+    var client = Ti.Network.createHTTPClient({
+        // function called when the response data is available
+        onload : function(e) {
 
-			Ti.API.info("err: " + e.error);
-		}
-	});
-	client.open("GET", url);
-	client.send();
-	return deferred.promise;
+            var json = JSON.parse(this.responseText);
+
+            if (json.error_message) {
+                
+               Ti.API.error("err: " + json.error_message);
+                            
+                deferred.reject({
+                    error : json.error_message,
+                    results : json
+                });
+
+            } else {
+
+                deferred.resolve({
+                    success : e,
+                    results : json
+                });
+            }
+
+        },
+        // function called when an error occurs, including a timeout
+        onerror : function(err) {
+            
+            Ti.API.error("err: " + err.error_message);
+            
+            deferred.reject({
+                error : err,
+                results : err.error
+            });
+
+        }
+    });
+    client.open("GET", url);
+    client.send();
+    return deferred.promise;
 
 }
 
@@ -162,60 +179,59 @@ function getPlace(type, latitude, longitude, _distance) {
  * get place detail information using google place api
  * placeId : google place api specific place id to get detail information
  */
-function getPlaceDetail(placeId){
-	var deferred = Q.defer();
-	
-	var url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=" + placeId + "&key=" + Ti.App.Properties.getString("Google_APIKey");
-	
-	var client = Ti.Network.createHTTPClient({
-		// function called when the response data is available
-		onload : function(e) {
+function getPlaceDetail(placeId) {
+    var deferred = Q.defer();
 
-			var json = JSON.parse(this.responseText);
+    var url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=" + placeId + "&key=" + Ti.App.Properties.getString("Google_APIKey");
 
-			deferred.resolve({
-				success : e,
-				results : json
-			});
+    var client = Ti.Network.createHTTPClient({
+        // function called when the response data is available
+        onload : function(e) {
 
-		},
-		// function called when an error occurs, including a timeout
-		onerror : function(err) {
-			deferred.reject({
-				error : err,
-				results : err.error
-			});
+            var json = JSON.parse(this.responseText);
 
-			Ti.API.info("err: " + e.error);
-		}
-	});
-	client.open("GET", url);
-	client.send();
-	return deferred.promise;	
+            deferred.resolve({
+                success : e,
+                results : json
+            });
+
+        },
+        // function called when an error occurs, including a timeout
+        onerror : function(err) {
+            deferred.reject({
+                error : err,
+                results : err.error
+            });
+
+            Ti.API.info("err: " + e.error);
+        }
+    });
+    client.open("GET", url);
+    client.send();
+    return deferred.promise;
 }
-
 
 /*
  * google geocode api
  * param : address
  * sample : 1600+Amphitheatre+Parkway,+Mountain+View,+CA
  */
-function getGeocoding(address){
-	var deferred = Q.defer();
-	var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + address  +"&key=" +  Ti.App.Properties.getString("Google_APIKey");
-	var client = Ti.Network.createHTTPClient({
-		onload : function(e) {
-			var json = JSON.parse(this.responseText);
-			deferred.resolve(json);
-		},
-		onerror : function(err) {
-			deferred.reject(err);
-			Ti.API.info("err: " + e.error);
-		}
-	});
-	client.open("GET", url);
-	client.send();
-	return deferred.promise;	
+function getGeocoding(address) {
+    var deferred = Q.defer();
+    var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + Ti.App.Properties.getString("Google_APIKey");
+    var client = Ti.Network.createHTTPClient({
+        onload : function(e) {
+            var json = JSON.parse(this.responseText);
+            deferred.resolve(json);
+        },
+        onerror : function(err) {
+            deferred.reject(err);
+            Ti.API.info("err: " + e.error);
+        }
+    });
+    client.open("GET", url);
+    client.send();
+    return deferred.promise;
 }
 
 /*
@@ -225,23 +241,23 @@ function getGeocoding(address){
  * https://maps.googleapis.com/maps/api/place/autocomplete/output?json
  * //TODO : request client to enable google ? or just use geocoding api with display all list below search
  */
-function getAutoCompleteLocation(_params){
-	var deferred = Q.defer();
-	var url = "https://maps.googleapis.com/maps/api/place/autocomplete/output?json&input="+ _params.input + "&key=" +  Ti.App.Properties.getString("Google_APIKey");
-	//var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + address  +"&key=" +  Ti.App.Properties.getString("Google_APIKey");
-	var client = Ti.Network.createHTTPClient({
-		onload : function(e) {
-			var json = JSON.parse(this.responseText);
-			deferred.resolve(json);
-		},
-		onerror : function(err) {
-			deferred.reject(err);
-			Ti.API.info("err: " + e.error);
-		}
-	});
-	client.open("GET", url);
-	client.send();
-	return deferred.promise;	
+function getAutoCompleteLocation(_params) {
+    var deferred = Q.defer();
+    var url = "https://maps.googleapis.com/maps/api/place/autocomplete/output?json&input=" + _params.input + "&key=" + Ti.App.Properties.getString("Google_APIKey");
+    //var url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + address  +"&key=" +  Ti.App.Properties.getString("Google_APIKey");
+    var client = Ti.Network.createHTTPClient({
+        onload : function(e) {
+            var json = JSON.parse(this.responseText);
+            deferred.resolve(json);
+        },
+        onerror : function(err) {
+            deferred.reject(err);
+            Ti.API.info("err: " + e.error);
+        }
+    });
+    client.open("GET", url);
+    client.send();
+    return deferred.promise;
 }
 
 // functions exposed by this module
