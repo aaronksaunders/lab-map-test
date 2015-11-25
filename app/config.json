@@ -1,6 +1,12 @@
 {
 	"global": {},
-	"env:development": {},
+	"env:development": {
+		"ML_TICKET": "92c6bedcb009710c4912d015a5601fd7",
+		"MOONLIGHT_BASE_URL": "http://imoonlightpreprod.elasticbeanstalk.com",
+		"MOONLIGHT_BASE_URL_": "http://imoonlightpreprod.elasticbeanstalk.com",
+		"PAYPAL_ONBOARDING_URL": "https://www.sandbox.paypal.com/webapps/merchantboarding/webflow/externalpartnerflow?countryCode=US&partnerId=YSR3J3JRUPUVG&productIntentID=addipmt&integrationType=T&permissionNeeded=EXPRESS_CHECKOUT,AUTH_CAPTURE,REFUND,TRANSACTION_DETAILS&receiveCredentials=true&showPermissions=true",
+		"PAYPAL_CHECKOUT_URL": "https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token="
+	},
 	"env:test": {},
 	"env:production": {},
 	"os:android": {},

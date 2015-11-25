@@ -1,4 +1,17 @@
-// TODO Uncomment out the global user id
+
+/**
+ * @TODO Uncomment out the global user id
+ *
+ * 
+* REQUIRES
+* Alloy.CFG.MOONLIGHT_BASE_URL
+* Alloy.Globals.currentUserId
+* 
+* */
+
+
+// will use this for promises
+var Q = require('q');
 
 var deferred = Q.defer();
 var url = Alloy.CFG.MOONLIGHT_BASE_URL;
@@ -41,6 +54,7 @@ exports.definition = {
             },
             
             fetchWithOptions : function(_options){
+            	console.log("fetch with options ", _options);
             	var model = this;
             	_options.url = url 
             				 + '/job/state/NEW/scope/LOCAL/user/' 

@@ -1,5 +1,9 @@
 Alloy.Globals.Map = require('ti.map');
 
+
+// will use this for promises
+var Q = require('q');
+
 // API KEY used for testing the application, the geoService API
 // is expecting to find the key there.
 var API_KEY = "AIzaSyAKqHtjBz0fc0CGg0D2r1yA7nc6el2PEA8";
@@ -8,8 +12,6 @@ Ti.App.Properties.setString("Google_APIKey", API_KEY);
 // geoService from original moonlighting project
 var geoService = require('geoService');
 
-// will use this for promises
-var Q = require('q');
 
 // the current distance showing on the mapView, this is used
 // when rendering the circle on the map and calculating where
@@ -220,6 +222,26 @@ function handleRegionChanged(_event) {
     return redoQuery(_event);
 }
 
+
+/**
+ * 
+ * @param {Object} _event
+ */
+function handleMapClick(_event) {
+	
+}
+
+
+
+// START THE APPLICATON
+// ----------------------------------------------------------------------------
+
+// get the users current location and set the map region appropriately
+// to get the application started up!
+
+function initializeMap() {
+	
+
 // SET THE EVENT LISTENERS
 // ----------------------------------------------------------------------------
 
@@ -229,21 +251,60 @@ $.MapView_1.addEventListener('complete', updateHandlerToDrawCircle);
 // fired when the map region has changed
 $.MapView_1.addEventListener('regionchanged', handleRegionChanged);
 
-// get the users current location and set the map region appropriately
-// to get the application started up!
-geoService.getCurrentLocation().then(function(_location) {
+// fired when the map region has been clicked
+$.MapView_1.addEventListener('click', handleMapClick);
+	
+	
+	
+	geoService.getCurrentLocation().then(function(_location) {
+	
+	    console.log("getCurrentLocation - success:", _location);
+	
+	    // set the region around the photo
+	    $.MapView_1.setRegion({
+	        latitude : _location.location.latitude,
+	        longitude : _location.location.longitude,
+	        latitudeDelta : 0.030,
+	        longitudeDelta : 0.040
+	    });
+	}, function(_error) {
+	    console.log("getCurrentLocation", _error);
+	});
+}
 
-    console.log("getCurrentLocation - success:", _location);
 
-    // set the region around the photo
-    $.MapView_1.setRegion({
-        latitude : _location.location.latitude,
-        longitude : _location.location.longitude,
-        latitudeDelta : 0.030,
-        longitudeDelta : 0.040
-    });
-}, function(_error) {
-    console.log("getCurrentLocation", _error);
+var jobs = Alloy.createCollection('JobsLocal');
+
+// setting global for testing purposes
+Alloy.Globals.currentUserId  = 154;
+
+
+function getJobsForMap() {
+	
+	var deferred = Q.defer();
+	   
+	jobs.fetchWithOptions({
+		success : function(_collection, _response) {
+			Ti.API.info('_collection ' + _collection);
+			deferred.resolve({response : _collection});
+		},
+		error: function (_error, _response) {
+			Ti.API.error(_error);
+			deferred.reject({error : _error});
+		}
+	});
+	
+	return deferred.promise;
+}
+
+
+getJobsForMap().then(function(_data){
+	var firstOne = _data.response.models[0];
+	
+	Ti.API.info('firstOne ', firstOne.attributes);
+	
+}, function(_error){
+	
 });
 
 $.index.open();
