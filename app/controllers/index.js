@@ -245,14 +245,14 @@ function initializeMap() {
 // SET THE EVENT LISTENERS
 // ----------------------------------------------------------------------------
 
-// need when on IOS to redraw the circle when map is done rendering
-$.MapView_1.addEventListener('complete', updateHandlerToDrawCircle);
-
-// fired when the map region has changed
-$.MapView_1.addEventListener('regionchanged', handleRegionChanged);
-
-// fired when the map region has been clicked
-$.MapView_1.addEventListener('click', handleMapClick);
+	// need when on IOS to redraw the circle when map is done rendering
+	$.MapView_1.addEventListener('complete', updateHandlerToDrawCircle);
+	
+	// fired when the map region has changed
+	$.MapView_1.addEventListener('regionchanged', handleRegionChanged);
+	
+	// fired when the map region has been clicked
+	$.MapView_1.addEventListener('click', handleMapClick);
 	
 	
 	
